@@ -1,0 +1,14 @@
+{
+  "name": "oak-channels",
+  "dockerFile": "Dockerfile",
+  "settings": {
+      "deno.enable": true,
+      "deno.lint": true,
+      "editor.defaultFormatter": "denoland.vscode-deno"
+  },
+  // This will install the vscode-deno extension
+  "extensions": [
+      "denoland.vscode-deno"
+  ],
+  "remoteUser": "vscode"
+}
