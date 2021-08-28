@@ -1,0 +1,16 @@
+{
+    "name": "oak-channels",
+    "image": "denoland/deno",
+    "forwardPorts": [],
+    "settings": {
+        "terminal.integrated.profiles.linux": {
+            "bash": {
+              "path": "/bin/bash",
+            }
+          }
+    },
+    "extensions": [
+        "denoland.deno",
+        "vscodevim.vim",
+    ]
+}
