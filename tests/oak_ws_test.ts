@@ -13,11 +13,15 @@ export class MockWebsocket extends EventTarget implements WebSocket {
   readonly extensions: string = "";
   protocol = "";
   readyState = WebSocket.CONNECTING;
-  url: string = "";
+  url = "";
   bufferedAmount = 0;
+  // deno-lint-ignore no-explicit-any
   onclose: ((this: WebSocket, ev: CloseEvent) => any) | null = null;
+  // deno-lint-ignore no-explicit-any
   onerror: ((this: WebSocket, ev: Event | ErrorEvent) => any) | null = null;
+  // deno-lint-ignore no-explicit-any
   onmessage: ((this: WebSocket, ev: MessageEvent) => any) | null = null;
+  // deno-lint-ignore no-explicit-any
   onopen: ((this: WebSocket, ev: Event) => any) | null = null;
   close = (code?: number, reason?: string) => {
     this.readyState = this.CLOSED;
@@ -27,9 +31,11 @@ export class MockWebsocket extends EventTarget implements WebSocket {
   send = (data: string | ArrayBufferLike | Blob | ArrayBufferView) => {
     this.dispatchEvent(new MessageEvent("message", { data }));
   };
-  addEventListener: WebSocket["addEventListener"] = (...args: Parameters<WebSocket["addEventListener"]>) => {
+  addEventListener: WebSocket["addEventListener"] = (
+    ...args: Parameters<WebSocket["addEventListener"]>
+  ) => {
     super.addEventListener(...args);
-  }
+  };
   get CLOSED() {
     return WebSocket.CLOSED;
   }
@@ -47,8 +53,31 @@ export class MockWebsocket extends EventTarget implements WebSocket {
   }
 }
 
+type WebsocketMockContext<P extends RouteParams = RouteParams> =
+  & RouterContext<P>
+  & {
+    isUpgradable: boolean;
+    _upgrade?: () => WebSocket;
+  };
+
 export function createWebsocketMockContext<
   P extends RouteParams = RouteParams,
+  // deno-lint-ignore no-explicit-any
+  S extends State = Record<string, any>,
+>(
+  options: MockContextOptions,
+): WebsocketMockContext & { websocket: MockWebsocket };
+export function createWebsocketMockContext<
+  P extends RouteParams = RouteParams,
+  // deno-lint-ignore no-explicit-any
+  S extends State = Record<string, any>,
+>(
+  options: MockContextOptions & { preUpgrade: false },
+): WebsocketMockContext & { websocket?: MockWebsocket };
+
+export function createWebsocketMockContext<
+  P extends RouteParams = RouteParams,
+  // deno-lint-ignore no-explicit-any
   S extends State = Record<string, any>,
 >(
   {
@@ -58,9 +87,14 @@ export function createWebsocketMockContext<
     params,
     path = "/",
     state,
-  }: MockContextOptions = {},
+    preUpgrade = true,
+  }: MockContextOptions & { preUpgrade?: boolean } = {},
 ) {
-  const context: RouterContext<P> & {websocket?: MockWebsocket, isUpgradable: boolean} = testing.createMockContext<P, S>({
+  const context: RouterContext<P> & {
+    websocket?: MockWebsocket;
+    isUpgradable: boolean;
+    _upgrade?: () => WebSocket;
+  } = testing.createMockContext<P, S>({
     app,
     ip,
     method,
@@ -69,11 +103,20 @@ export function createWebsocketMockContext<
     state,
   });
   (context.isUpgradable as boolean) = true;
-  context.upgrade = async () => {
+  context._upgrade = () => {
+    if (context.websocket) return context.websocket;
     const ws = new MockWebsocket();
     ws.url = path;
     context.websocket = ws;
     return ws;
   };
-  return context
+  // deno-lint-ignore require-await
+  context.upgrade = (async () => {
+    context._upgrade!();
+    return context.websocket!;
+  });
+  if (preUpgrade) {
+    context._upgrade();
+  }
+  return context;
 }

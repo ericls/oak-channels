@@ -1,16 +1,15 @@
 import {
   Router,
-  Application,
-  testing,
+  testing
 } from "https://deno.land/x/oak@v9.0.0/mod.ts";
 import { createWebsocketMockContext } from "./oak_ws_test.ts";
 import {
   assert,
-  assertEquals,
 } from "https://deno.land/std@0.106.0/testing/asserts.ts";
 import { BaseConsumer, mountConsumer } from "../consumer.ts";
 
 class MyConsumer extends BaseConsumer {
+  // deno-lint-ignore require-await
   onConnect = async () => {
     this.send("hi");
   };
@@ -24,23 +23,32 @@ router.all("/foo", (context) => {
 
 Deno.test({
   name: "can mount consumer",
-  async fn() {
-    const context = createWebsocketMockContext({ path: "/ws" });
+  fn() {
+    const context = createWebsocketMockContext({ path: "/ws", preUpgrade: false});
+    assert(context.websocket === undefined)
     const done = new Promise<void>((resolve) => {
+      // deno-lint-ignore require-await
       router.routes()(context, async () => {
         assert(context.websocket);
-        resolve()
-        // context.websocket?.addEventListener("message", (ev) =>{
-        //   console.log("wow")
-        //   assertEquals(ev.data, "hi");
-        //   resolve();
-        // });
+        resolve();
       });
-      // mountConsumer(MyConsumer)(context, async () => {
-      //   console.log("???");
-      //   resolve()
-      // });
     });
     return done;
   },
 });
+
+Deno.test({
+  name: "can receive hi from onConnect",
+  fn() {
+    const context = createWebsocketMockContext({"path": "/ws"});
+    assert(context.websocket);
+    const done = new Promise<void>((resolve) => {
+      context.websocket.addEventListener("message", (e) => {
+        assert(e.data === "hi");
+        resolve();
+      })
+      router.routes()(context, testing.createMockNext());
+    })
+    return done;
+  }
+})
