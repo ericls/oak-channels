@@ -2,7 +2,7 @@ import {
   Router,
   testing
 } from "https://deno.land/x/oak@v9.0.0/mod.ts";
-import { createWebsocketMockContext } from "./oak_ws_test.ts";
+import { createWebsocketMockContext } from "./lib/oak_ws_test_utils.ts";
 import {
   assert,
 } from "https://deno.land/std@0.106.0/testing/asserts.ts";
