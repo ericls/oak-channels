@@ -6,6 +6,8 @@ import {
 } from "https://deno.land/x/oak@v9.0.0/mod.ts";
 import { MockContextOptions } from "https://deno.land/x/oak@v9.0.0/testing.ts";
 
+let NONCE = 0
+
 export class MockWebsocket extends EventTarget implements WebSocket {
   closeCode?: number;
   closeReason?: string;
@@ -23,13 +25,28 @@ export class MockWebsocket extends EventTarget implements WebSocket {
   onmessage: ((this: WebSocket, ev: MessageEvent) => any) | null = null;
   // deno-lint-ignore no-explicit-any
   onopen: ((this: WebSocket, ev: Event) => any) | null = null;
+  nonce: number;
+  constructor(public otherSide?: MockWebsocket) {
+    super()
+    this.nonce = NONCE;
+    NONCE += 1;
+  }
+  get client() {
+    if (this.otherSide) {
+      return this.otherSide;
+    }
+    return new MockWebsocket();
+  }
   close = (code?: number, reason?: string) => {
     this.readyState = this.CLOSED;
     this.closeCode = code;
     this.closeReason = reason;
   };
   send = (data: string | ArrayBufferLike | Blob | ArrayBufferView) => {
-    this.dispatchEvent(new MessageEvent("message", { data }));
+    if (!this.otherSide) {
+      throw new Error("No other side of websocket")
+    }
+    this.otherSide.dispatchEvent(new MessageEvent("message", { data }));
   };
   addEventListener: WebSocket["addEventListener"] = (
     ...args: Parameters<WebSocket["addEventListener"]>
@@ -66,14 +83,14 @@ export function createWebsocketMockContext<
   S extends State = Record<string, any>,
 >(
   options: MockContextOptions,
-): WebsocketMockContext & { websocket: MockWebsocket };
+): WebsocketMockContext & { websocket: MockWebsocket};
 export function createWebsocketMockContext<
   P extends RouteParams = RouteParams,
   // deno-lint-ignore no-explicit-any
   S extends State = Record<string, any>,
 >(
   options: MockContextOptions & { preUpgrade: false },
-): WebsocketMockContext & { websocket?: MockWebsocket };
+): WebsocketMockContext & { websocket?: MockWebsocket};
 
 export function createWebsocketMockContext<
   P extends RouteParams = RouteParams,
@@ -103,9 +120,11 @@ export function createWebsocketMockContext<
     state,
   });
   (context.isUpgradable as boolean) = true;
+  const clientSocket = new MockWebsocket()
   context._upgrade = () => {
-    if (context.websocket) return context.websocket;
-    const ws = new MockWebsocket();
+    const ws = context.websocket || new MockWebsocket();
+    clientSocket.otherSide = ws;
+    ws.otherSide = clientSocket;
     ws.url = path;
     context.websocket = ws;
     return ws;

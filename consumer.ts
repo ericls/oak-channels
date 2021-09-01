@@ -39,12 +39,27 @@ export class BaseConsumer implements Consumer {
     this.close = websocket.close;
   }
   run = async () => {
+    this.websocket.addEventListener("message", this.onMessage);
     await this.onConnect();
   };
-  onText = async (text: string) => {
+  private onMessage = async (
+    event: MessageEvent<string | ArrayBufferLike | Blob>,
+  ) => {
+    const data = event.data;
+    if (typeof data === "string") {
+      await this.onText(data);
+    } else if (data instanceof Uint8Array) {
+      await this.onBinary(data);
+    } else if (data instanceof Blob) {
+      await this.onBinary(await (data.arrayBuffer() as Promise<Uint8Array>));
+    } else {
+      throw new Error("unknown data format");
+    }
   };
-  onBinary: (buf: Uint8Array) => Promise<void> = async (buf: Uint8Array) => {
-  };
-  onConnect: () => Promise<void> = async () => {
-  };
+  async onText(text: string) {
+  }
+  async onBinary(buf: Uint8Array) {
+  }
+  async onConnect(): Promise<void> {
+  }
 }
