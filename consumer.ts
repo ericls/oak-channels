@@ -64,7 +64,7 @@ export class BaseConsumer implements Consumer {
     } else if (data instanceof Uint8Array) {
       await this.onBinary(data);
     } else if (data instanceof Blob) {
-      await this.onBinary(await (data.arrayBuffer() as Promise<Uint8Array>));
+      await this.onBinary(new Uint8Array(await (data.arrayBuffer() as Promise<Uint8Array>)));
     } else {
       throw new Error("unknown data format");
     }

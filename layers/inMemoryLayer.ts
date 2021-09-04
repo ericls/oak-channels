@@ -1,8 +1,6 @@
 import { Layer } from "./index.ts";
 import { Consumer } from "../consumer.ts";
 
-// const IN_MEMORY_CHANNEL_MAP = {}
-
 class ConsumerGroupMap {
   consumerToGroups = new WeakMap<Consumer, string[]>();
   groupToConsumers = new Map<string, Consumer[]>();
