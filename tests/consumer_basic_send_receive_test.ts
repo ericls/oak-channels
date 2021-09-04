@@ -3,6 +3,7 @@ import { assertEquals } from "https://deno.land/std@0.106.0/testing/asserts.ts"
 
 import { createWebsocketMockContext } from "./lib/oak_ws_test_utils.ts";
 import { BaseConsumer, mountConsumer } from "../consumer.ts";
+import { InMemoryLayer } from "../layers/inMemoryLayer.ts";
 
 Deno.test({
   name: "Call onBinary",
@@ -21,7 +22,7 @@ Deno.test({
     }
 
     const router = new Router();
-    router.all("/ws", mountConsumer(MyConsumer));
+    router.all("/ws", mountConsumer(MyConsumer, new InMemoryLayer()));
     const context = createWebsocketMockContext({ "path": "/ws" });
     const done = new Promise<void>((resolve) => {
       cb = resolve;
@@ -51,7 +52,7 @@ Deno.test({
     }
 
     const router = new Router();
-    router.all("/ws", mountConsumer(MyConsumer));
+    router.all("/ws", mountConsumer(MyConsumer, new InMemoryLayer()));
     const context = createWebsocketMockContext({ "path": "/ws" });
     const done = new Promise<void>((resolve) => {
       cb = resolve;

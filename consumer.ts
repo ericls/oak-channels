@@ -3,27 +3,36 @@ import {
   RouterMiddleware as Middleware,
   Status,
 } from "https://deno.land/x/oak@v9.0.0/mod.ts";
+import { Layer } from "./layers/index.ts";
 
-interface Consumer {
+export interface Consumer {
   run: () => Promise<void>;
   onText: (text: string) => Promise<void>;
   onBinary: (buf: Uint8Array) => Promise<void>;
+  onGroupMessage: (
+    group: string,
+    textOrBinary: string | Uint8Array,
+  ) => Promise<void>;
   onConnect: () => Promise<void>;
   close: (code?: number, reason?: string) => void;
+  layer: Layer;
 }
 
 interface ConsumerConstructor {
-  new (context: Context, websocket: WebSocket): Consumer;
+  new (context: Context, websocket: WebSocket, layer: Layer): Consumer;
 }
 
-export function mountConsumer(ConsumerClass: ConsumerConstructor): Middleware {
+export function mountConsumer(
+  ConsumerClass: ConsumerConstructor,
+  layer: Layer,
+): Middleware {
   return async (context: Context, next: () => Promise<unknown>) => {
     if (!context.isUpgradable) {
       context.response.status = Status.NotFound;
       return;
     }
     const websocket = await context.upgrade();
-    const consumer = new ConsumerClass(context, websocket);
+    const consumer = new ConsumerClass(context, websocket, layer);
     await consumer.run();
     await next();
   };
@@ -34,7 +43,11 @@ export function mountConsumer(ConsumerClass: ConsumerConstructor): Middleware {
 export class BaseConsumer implements Consumer {
   send: WebSocket["send"];
   close: WebSocket["close"];
-  constructor(public context: Context, public websocket: WebSocket) {
+  constructor(
+    public context: Context,
+    public websocket: WebSocket,
+    public layer: Layer,
+  ) {
     this.send = websocket.send;
     this.close = websocket.close;
   }
@@ -56,9 +69,11 @@ export class BaseConsumer implements Consumer {
       throw new Error("unknown data format");
     }
   };
-  async onText(text: string) {
+  async onText(_text: string) {
   }
-  async onBinary(buf: Uint8Array) {
+  async onBinary(_buf: Uint8Array) {
+  }
+  async onGroupMessage(_group: string, _textOrBinary: string | Uint8Array) {
   }
   async onConnect(): Promise<void> {
   }
