@@ -139,3 +139,25 @@ export function createWebsocketMockContext<
   }
   return context;
 }
+
+export const counterWaiter = (targetCount: number) => {
+  const calls: unknown[][] = [];
+  let cb: () => Promise<void> = () => {
+    throw new Error("Not initialized");
+  };
+  return {
+    ready: (...args: unknown[]) => {
+      calls.push(args)
+      if (calls.length == targetCount) {
+        cb();
+      }
+    },
+    get count() {
+      return calls.length;
+    },
+    calls,
+    promise: new Promise<void>((resolve) => {
+      cb = resolve as () => Promise<void>;
+    }),
+  };
+};

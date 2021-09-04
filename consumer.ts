@@ -77,4 +77,10 @@ export class BaseConsumer implements Consumer {
   }
   async onConnect(): Promise<void> {
   }
+  async groupJoin(groupName: string) {
+    await this.layer.groupJoin(this, groupName)
+  }
+  async groupLeave(groupName: string) {
+    await this.layer.groupLeave(this, groupName)
+  }
 }
