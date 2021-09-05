@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/vscode/devcontainers/base:debian-10
+FROM mcr.microsoft.com/vscode/devcontainers/base:debian-11
 
 ENV DENO_INSTALL=/deno
 RUN mkdir -p /deno \
@@ -7,3 +7,6 @@ RUN mkdir -p /deno \
 
 ENV PATH=${DENO_INSTALL}/bin:${PATH} \
     DENO_DIR=${DENO_INSTALL}/.cache/deno
+
+RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+   && apt-get -y install vim

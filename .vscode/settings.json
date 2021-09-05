@@ -5,6 +5,6 @@
     },
     "deno.codeLens.testArgs": [
         "--allow-all",
-        "--no-check"
+        "--no-check" // to make inline tests faster
     ]
 }

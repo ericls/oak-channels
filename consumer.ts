@@ -38,8 +38,6 @@ export function mountConsumer(
   };
 }
 
-// Websocket is by nature stateful
-// so it's more suitable to write consumers as classes
 export class BaseConsumer implements Consumer {
   send: WebSocket["send"];
   close: WebSocket["close"];
@@ -48,8 +46,8 @@ export class BaseConsumer implements Consumer {
     public websocket: WebSocket,
     public layer: Layer,
   ) {
-    this.send = websocket.send;
-    this.close = websocket.close;
+    this.send = websocket.send.bind(websocket);
+    this.close = websocket.close.bind(websocket);
   }
   run = async () => {
     this.websocket.addEventListener("message", this.onMessage);
@@ -64,7 +62,9 @@ export class BaseConsumer implements Consumer {
     } else if (data instanceof Uint8Array) {
       await this.onBinary(data);
     } else if (data instanceof Blob) {
-      await this.onBinary(new Uint8Array(await (data.arrayBuffer() as Promise<Uint8Array>)));
+      await this.onBinary(
+        new Uint8Array(await (data.arrayBuffer() as Promise<Uint8Array>)),
+      );
     } else {
       throw new Error("unknown data format");
     }
@@ -78,9 +78,40 @@ export class BaseConsumer implements Consumer {
   async onConnect(): Promise<void> {
   }
   async groupJoin(groupName: string) {
-    await this.layer.groupJoin(this, groupName)
+    await this.layer.groupJoin(this, groupName);
   }
   async groupLeave(groupName: string) {
-    await this.layer.groupLeave(this, groupName)
+    await this.layer.groupLeave(this, groupName);
+  }
+}
+
+export class JSONConsumer extends BaseConsumer {
+  textDecoder = new TextDecoder();
+  textEncoder = new TextEncoder();
+  async onText(text: string) {
+    try {
+      const data = JSON.parse(text);
+      await this.onJSON(data);
+      // deno-lint-ignore no-empty
+    } catch (_error) {}
+  }
+  async onBinary(buf: Uint8Array) {
+    try {
+      const text = this.textDecoder.decode(buf);
+      const data = JSON.parse(text);
+      await this.onJSON(data);
+      // deno-lint-ignore no-empty
+    } catch (_error) {}
+  }
+  async onJSON<T>(_value: T) {
+  }
+  sendJSON<T>(value: T, { binary = false }: { binary: boolean }) {
+    const text = JSON.stringify(value);
+    if (binary) {
+      const data = this.textEncoder.encode(text);
+      this.send(data);
+    } else {
+      this.send(text);
+    }
   }
 }
