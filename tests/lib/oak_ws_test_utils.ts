@@ -5,6 +5,7 @@ import {
   testing,
 } from "https://deno.land/x/oak@v9.0.0/mod.ts";
 import { MockContextOptions } from "https://deno.land/x/oak@v9.0.0/testing.ts";
+import { Consumer } from "../../consumer.ts";
 
 let NONCE = 0
 
@@ -80,14 +81,14 @@ type WebsocketMockContext<P extends RouteParams = RouteParams> =
 export function createWebsocketMockContext<
   P extends RouteParams = RouteParams,
   // deno-lint-ignore no-explicit-any
-  S extends State = Record<string, any>,
+  S extends State = Record<string, any>  & {consumer: Consumer},
 >(
   options: MockContextOptions,
 ): WebsocketMockContext & { websocket: MockWebsocket};
 export function createWebsocketMockContext<
   P extends RouteParams = RouteParams,
   // deno-lint-ignore no-explicit-any
-  S extends State = Record<string, any>,
+  S extends State = Record<string, any> & {consumer: Consumer},
 >(
   options: MockContextOptions & { preUpgrade: false },
 ): WebsocketMockContext & { websocket?: MockWebsocket};
@@ -95,7 +96,7 @@ export function createWebsocketMockContext<
 export function createWebsocketMockContext<
   P extends RouteParams = RouteParams,
   // deno-lint-ignore no-explicit-any
-  S extends State = Record<string, any>,
+  S extends State = Record<string, any>  & {consumer: Consumer},
 >(
   {
     app,
@@ -107,11 +108,11 @@ export function createWebsocketMockContext<
     preUpgrade = true,
   }: MockContextOptions & { preUpgrade?: boolean } = {},
 ) {
-  const context: RouterContext<P> & {
+  const context: RouterContext<P, S  & {consumer: Consumer}> & {
     websocket?: MockWebsocket;
     isUpgradable: boolean;
     _upgrade?: () => WebSocket;
-  } = testing.createMockContext<P, S>({
+  } = testing.createMockContext<P, S  & {consumer: Consumer}>({
     app,
     ip,
     method,

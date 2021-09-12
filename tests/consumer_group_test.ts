@@ -104,3 +104,43 @@ Deno.test({
     assertEquals(groupMessageWaiter.calls, [["123"], [new Uint8Array([1,2,3,4])]])
   },
 });
+
+Deno.test({
+  name: "Disconnection leaves all groups",
+  async fn() {
+    const layer = new InMemoryLayer();
+    const connectWaiter = counterWaiter(2);
+    const groupMessageWaiter = counterWaiter(1);
+    const closeWaiter = counterWaiter(1);
+    class MyConsumer extends BaseConsumer {
+      async onConnect() {
+        await super.onConnect();
+        await this.groupJoin("foo");
+        connectWaiter.ready();
+      }
+      // deno-lint-ignore require-await
+      async onClose() {
+        closeWaiter.ready();
+      }
+      // deno-lint-ignore require-await
+      async onGroupMessage(group: string, textOrBinary: string | Uint8Array) {
+        assertEquals(group, "foo");
+        assertEquals(textOrBinary, "123");
+        groupMessageWaiter.ready();
+      }
+    }
+
+    const router = new Router();
+    router.all("/ws", mountConsumer(MyConsumer, layer));
+    const context1 = createWebsocketMockContext({ "path": "/ws" });
+    router.routes()(context1, async () => {});
+    const context2 = createWebsocketMockContext({ "path": "/ws" });
+    router.routes()(context2, async () => {});
+    await connectWaiter.promise;
+    context2.state.consumer.websocket.dispatchEvent(new CloseEvent("close"))
+    await closeWaiter.promise;
+    assertEquals(layer.consumerGroupMap.getConsumers("foo").length, 1)
+    await layer.groupSend("foo", "123");
+    await groupMessageWaiter.promise;
+  },
+});
