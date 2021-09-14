@@ -152,6 +152,9 @@ export const counterWaiter = (targetCount: number) => {
       if (calls.length == targetCount) {
         cb();
       }
+      if (calls.length > targetCount) {
+        throw new Error("Called more than expected")
+      }
     },
     get count() {
       return calls.length;

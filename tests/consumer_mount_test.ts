@@ -3,7 +3,7 @@ import { assert } from "https://deno.land/std@0.106.0/testing/asserts.ts";
 
 import { createWebsocketMockContext } from "./lib/oak_ws_test_utils.ts";
 import { BaseConsumer, mountConsumer } from "../consumer.ts";
-import { InMemoryLayer } from "../layers/inMemoryLayer.ts";
+import { InMemoryLayer } from "../layers/inMemory.ts";
 
 class MyConsumer extends BaseConsumer {
   async onConnect() {
