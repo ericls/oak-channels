@@ -9,7 +9,7 @@ import {
   InMemoryLayer,
   JSONConsumer,
   mountConsumer,
-} from "../mod.ts";
+} from "https://deno.land/x/oak_channels/mod.ts";
 
 const app = new Application({ serverConstructor: HttpServerStd });
 const router = new Router();
