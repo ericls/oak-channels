@@ -33,8 +33,11 @@ class JSONEchoConsumer
 
 router.all("/index.js", (context) => {
   context.response.body = `
-    const jsonws = new WebSocket('ws://127.0.0.1:8000/ws-json');
-    const ws = new WebSocket('ws://127.0.0.1:8000/ws');
+    const host = window.location.host;
+    const scheme = window.location.protocol === "http:" ? "ws" : "wss";
+    const baseURL = ` + "`${scheme}://${host}`" + `;
+    const jsonws = new WebSocket(baseURL + '/ws-json');
+    const ws = new WebSocket(baseURL + '/ws');
     ws.addEventListener("message", (e) => console.log("received", e.data));
     jsonws.addEventListener("message", (e) => console.log("received", JSON.parse(e.data)));
     ws.onopen = () => {

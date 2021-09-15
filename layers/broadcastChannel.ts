@@ -41,6 +41,13 @@ export class BroadcastChannelLayer extends Layer {
     channel.postMessage(message);
     channel.dispatchEvent(new MessageEvent("message", {data: message}))
   };
+  // deno-lint-ignore require-await
+  removeConsumer = async (consumer: Consumer) => {
+    // TODO: optimize this when it works
+    for (const [k, consumers] of this.groupNameToConsumers) {
+      this.groupNameToConsumers.set(k, consumers.filter(c => c !== consumer))
+    }
+  }
   private getChannel(groupName: string) {
     let channel = this.groupNameToChannel.get(groupName);
     if (!channel) {
