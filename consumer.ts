@@ -12,9 +12,10 @@ export interface Consumer extends EventTarget {
   onText: (text: string) => Promise<void>;
   onBinary: (buf: Uint8Array) => Promise<void>;
   onGroupMessage: (
-    group: string,
+    groupName: string,
     textOrBinary: string | Uint8Array,
   ) => Promise<void>;
+  groupSend: (groupName: string, message: string | Uint8Array) => Promise<void>;
   onConnect: () => Promise<void>;
   onClose: () => Promise<void>;
   close: (code?: number, reason?: string) => void;
@@ -93,6 +94,9 @@ export class BaseConsumer extends EventTarget implements Consumer {
   }
   async groupLeave(groupName: string) {
     await this.layer.groupLeave(this, groupName);
+  }
+  async groupSend(groupName: string, message: string | Uint8Array) {
+    await this.layer.groupSend(groupName, message);
   }
 }
 

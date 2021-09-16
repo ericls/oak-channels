@@ -17,7 +17,17 @@ const router = new Router();
 const layer = new InMemoryLayer();
 
 class EchoConsumer extends BaseConsumer {
-  // deno-lint-ignore require-await
+  async onConnect() {
+    // add this consumer to group "foo"
+    await this.groupJoin("foo");
+    // send group message to all consumers in group "foo"
+    await this.groupSend("foo", "new user joined");
+  }
+  // handle group messages
+  async onGroupMessage(group: string, message: string | Uint8Array) {
+    this.send(`${group} says ${message}`)
+  }
+  // handle client messages
   async onText(text: string) {
     this.send(text);
   }
@@ -35,7 +45,7 @@ router.all("/index.js", (context) => {
   context.response.body = `
     const host = window.location.host;
     const scheme = window.location.protocol === "http:" ? "ws" : "wss";
-    const baseURL = ` + "`${scheme}://${host}`" + `;
+    const baseURL = \`\${scheme}://\${host}\`;
     const jsonws = new WebSocket(baseURL + '/ws-json');
     const ws = new WebSocket(baseURL + '/ws');
     ws.addEventListener("message", (e) => console.log("received", e.data));
